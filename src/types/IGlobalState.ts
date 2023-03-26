@@ -9,4 +9,6 @@ export interface IAction {
 export interface IGlobalState {
   dispatch: Dispatch<IAction>;
   exceptionMsg: string;
+  ipcRenderer: typeof window.electron.ipcRenderer;
+  autoPrinter: boolean;
 }

@@ -4,12 +4,12 @@ import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
 export type Channels =
   | 'ipcException'
-  | 'getDbConfig'
-  | 'setDbConfig'
-  | 'ping'
-  | 'randomId';
+  | 'getConfing'
+  | 'printer'
+  | 'newFile'
+  | 'changeAutoPrinter';
 
-const listeners: Channels[] = [];
+let listeners: Channels[] = [];
 
 const electronHandler = {
   ipcRenderer: {
@@ -30,6 +30,8 @@ const electronHandler = {
       // eslint-disable-next-line consistent-return
       return () => {
         ipcRenderer.removeListener(channel, subscription);
+        // remove listenner
+        listeners = listeners.filter((listener) => listener !== channel);
       };
     },
     once(channel: Channels, func: (...args: unknown[]) => void) {

@@ -8,7 +8,10 @@ export default function reducer(
   let newAction = { ...state };
 
   arrAction.forEach((act) => {
-    if (Object.keys(state).includes(act.type) && typeof act.payload === typeof state[act.type]) {
+    if (
+      Object.keys(state).includes(act.type) &&
+      typeof act.payload === typeof state[act.type]
+    ) {
       newAction = { ...newAction, [act.type]: act.payload };
       localStorage.setItem(act.type, act.payload);
     }

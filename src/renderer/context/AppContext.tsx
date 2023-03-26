@@ -19,8 +19,24 @@ export const Context = createContext<IGlobalState>(globalState);
 export function AppContext({ children }: IContextApp) {
   const [state, dispatch] = useReducer(reducer, globalState);
 
+  useEffect(() => {
+    let autoPrinter = localStorage.getItem('autoPrinter');
+    if (!autoPrinter) {
+      autoPrinter = 'true';
+      localStorage.setItem('autoPrinter', autoPrinter);
+    }
+    globalState.ipcRenderer.sendMessage('changeAutoPrinter', [autoPrinter]);
+  }, []);
+
+  globalState.ipcRenderer.on('changeAutoPrinter', (msg) => {
+    if (Array.isArray(msg) && typeof msg[0] === 'boolean') {
+      localStorage.setItem('autoPrinter', `${msg[0]}`);
+      dispatch({ type: 'autoPrinter', payload: msg[0] });
+    }
+  });
+
   // Chanel que recebe erros do backend
-  window.electron.ipcRenderer.on('ipcException', (msg) => {
+  globalState.ipcRenderer.on('ipcException', (msg) => {
     dispatch({
       type: 'exceptionMsg',
       payload: msg,

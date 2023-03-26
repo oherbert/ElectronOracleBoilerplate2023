@@ -3,9 +3,8 @@ import path from 'path';
 
 class MainEnv {
   public isQuitting: boolean;
-  public reloadDBConfig: boolean;
-  public dbConfig: string;
-  public oraClient: string;
+
+  public autoPrint: boolean = false;
 
   private RESOURCES_PATH = app.isPackaged
     ? path.join(process.resourcesPath, 'assets')
@@ -13,9 +12,6 @@ class MainEnv {
 
   constructor() {
     this.isQuitting = false;
-    this.dbConfig = this.getAssetPath('/config/database.json');
-    this.oraClient = this.getAssetPath('/instantclient');
-    this.reloadDBConfig = false;
   }
 
   public getAssetPath(...paths: string[]): string {

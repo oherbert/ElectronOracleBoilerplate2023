@@ -16,6 +16,11 @@ import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import mainEnv from './MainEnv';
 import appListeners from './appListeners';
+import tray from './TrayApp';
+import getContextMenu from './trayMenu';
+import fileListenner from './FileListenner';
+
+const appName = 'Printer Manager';
 
 class AppUpdater {
   constructor() {
@@ -34,6 +39,8 @@ let mainWindow: BrowserWindow | null = null;
 // });
 
 appListeners();
+
+fileListenner.active();
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -87,6 +94,15 @@ const createWindow = async () => {
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
 
+  mainWindow.on('close', (event) => {
+    if (mainEnv.isQuitting) {
+      mainWindow = null;
+    } else {
+      event.preventDefault();
+      mainWindow?.hide();
+    }
+  });
+
   mainWindow.on('ready-to-show', () => {
     if (!mainWindow) {
       throw new Error('"mainWindow" is not defined');
@@ -105,6 +121,19 @@ const createWindow = async () => {
   const menuBuilder = new MenuBuilder(mainWindow);
   menuBuilder.buildMenu();
 
+  // Tray - Bandeija do sistema
+  tray.icon = mainEnv.getAssetPath(`/icons/16x16.png`);
+
+  tray.title = 'Api teste';
+  tray.tip = 'API teste';
+  tray.contextMenu = getContextMenu();
+  tray.startTray();
+  tray.on('click', () => {
+    mainWindow?.show();
+    mainWindow?.focus();
+  });
+  // End Tray
+
   // Open urls in the user's browser
   mainWindow.webContents.setWindowOpenHandler((edata) => {
     shell.openExternal(edata.url);
@@ -116,10 +145,6 @@ const createWindow = async () => {
   new AppUpdater();
 };
 
-/**
- * Add event listeners...
- */
-
 app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even
   // after all windows have been closed
@@ -129,9 +154,12 @@ app.on('window-all-closed', () => {
 });
 
 // Abrir unica instancia
+app.hasSingleInstanceLock();
+app.setName(appName);
+
 const isSingleInstance = app.requestSingleInstanceLock();
 if (!isSingleInstance) {
-  app.quit();
+  if (app.getName() === appName) app.quit();
 }
 
 app
@@ -144,7 +172,7 @@ app
       if (mainWindow === null) createWindow();
     });
     app.on('second-instance', () => {
-      if (mainWindow) {
+      if (mainWindow && app.getName() === appName) {
         if (mainWindow.isMinimized()) mainWindow.restore();
         mainWindow.show();
         mainWindow.focus();
