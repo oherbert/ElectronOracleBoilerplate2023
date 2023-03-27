@@ -1,20 +1,26 @@
 import { ipcMain, BrowserWindow } from 'electron';
+import ILabel from 'types/ILabel';
 import getDBConfig from '../config/database';
 import mainEnv from './MainEnv';
 import trayApp from './TrayApp';
 
-const options = {
-  silent: false,
-  color: false,
-  landscape: false,
-  pagesPerSheet: 1,
-  collate: false,
-  copies: 1,
-};
+// const options = {
+//   silent: false,
+//   color: false,
+//   landscape: false,
+//   pagesPerSheet: 1,
+//   collate: false,
+//   copies: 1,
+// };
 
 const appListeners = () => {
-  ipcMain.on('printer', async (event) => {
+  ipcMain.on('printer', async (event, args) => {
     try {
+      if (!Array.isArray(args) || args.length === 0 || !('zpl' in args[0]))
+        throw new Error('Tipo de Argumento para impressão incorreto!');
+
+      const label: ILabel = args[0] as ILabel;
+
       const win: BrowserWindow | null = new BrowserWindow({ show: false });
 
       if (win === null) {
@@ -22,30 +28,50 @@ const appListeners = () => {
       }
 
       console.log('\n \n printer \n \n');
-      console.log(mainEnv.getAssetPath('/zpl/et colchão.zpl'));
 
       win.once('ready-to-show', () => win.hide());
 
-      win.loadFile(mainEnv.getAssetPath('/zpl/et colchão.zpl'));
+      win.loadFile(mainEnv.getAssetPath(`/zpl/${label.fileName}`));
       win.webContents.on('did-finish-load', async () => {
-        // Finding Default Printer name
-        // const printersInfo = await win.webContents.getPrintersAsync();
-        // const printer = printersInfo.filter((p) => p.isDefault === true)[0];
+        let options = {
+          silent: false,
+          color: false,
+          landscape: false,
+          pagesPerSheet: 1,
+          collate: false,
+          copies: 1,
+          deviceName: '',
+        };
 
-        // console.log(printer);
-        // const options = {
-        //   silent: true,
-        //   deviceName: printer.name,
-        //   pageSize: { height: 301000, width: 50000 },
-        // };
+        if (mainEnv.autoPrint) {
+          // Finding Default Printer name
+          const printersInfo = await win.webContents.getPrintersAsync();
+          const printer = printersInfo.filter((p) => p.isDefault === true)[0];
+
+          // console.log(printer);
+          options = {
+            silent: true,
+            deviceName: printer.name,
+            color: false,
+            landscape: false,
+            pagesPerSheet: 1,
+            collate: false,
+            copies: 1,
+          };
+        }
 
         win?.webContents.print(options, (success, failureReason) => {
           if (!success) {
             console.log(failureReason);
-            if (failureReason === 'Print job canceled')
+            if (
+              failureReason === 'Print job canceled' ||
+              failureReason === 'Print job failed'
+            )
               event.reply('printer', ['canceled']);
             else event.reply('ipcException', failureReason);
-          } else event.reply('printer', ['success']);
+          } else event.reply('printer', ['success', label.fileName]);
+
+          win.destroy();
         });
       });
 

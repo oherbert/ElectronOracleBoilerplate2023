@@ -25,7 +25,11 @@ export function AppContext({ children }: IContextApp) {
       autoPrinter = 'true';
       localStorage.setItem('autoPrinter', autoPrinter);
     }
+
+    console.log(autoPrinter);
+
     globalState.ipcRenderer.sendMessage('changeAutoPrinter', [autoPrinter]);
+    dispatch({ type: 'autoPrinter', payload: autoPrinter === `true` });
   }, []);
 
   globalState.ipcRenderer.on('changeAutoPrinter', (msg) => {
@@ -41,6 +45,14 @@ export function AppContext({ children }: IContextApp) {
       type: 'exceptionMsg',
       payload: msg,
     });
+  });
+
+  globalState.ipcRenderer.on('newFile', (args) => {
+    console.log(args);
+
+    if (Array.isArray(args) && args.length > 0) {
+      dispatch({ type: 'newFile', payload: args[0] });
+    }
   });
 
   useEffect(() => {

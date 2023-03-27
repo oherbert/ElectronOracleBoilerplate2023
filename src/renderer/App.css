@@ -59,3 +59,9 @@ a:hover {
   align-items: center;
   margin: 20px 0;
 }
+
+.zlp-img {
+  width: 50vw;
+  height: 55vh;
+  margin-left: 20vw;
+}

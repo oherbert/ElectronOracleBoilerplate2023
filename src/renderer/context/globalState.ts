@@ -7,6 +7,7 @@ const globalState: IGlobalState = {
   exceptionMsg: '',
   ipcRenderer: window.electron.ipcRenderer,
   autoPrinter: false,
+  newFile: null,
 };
 
 export default globalState;
