@@ -30,23 +30,36 @@ function getItem(
 
 function PrinterManager() {
   const {
-    ipcRenderer: { on, sendMessage },
+    ipcRenderer: { sendMessage, on },
     autoPrinter,
     dispatch,
     newFile,
+    printer,
   } = useContext(Context);
 
   const [labels, setLabels] = useState<ILabel[]>([]);
   const [selected, setSelected] = useState<null | number>(null);
 
-  on('printer', (args) => {
-    console.log(args);
-    // setRandom({ ...(args as object) });
-  });
-
   const onClickToPrint = () => {
     if (labels.length > 0 && selected !== null)
       sendMessage('printer', [labels[selected]]);
+  };
+
+  const onClickDelete = () => {
+    if (labels.length > 0 && selected !== null) {
+      console.log('unlink');
+
+      sendMessage('unlinkZpl', [labels[selected].fileName]);
+      on('unlinkZpl', (res) => {
+        console.log('remove front');
+
+        const newLabels = labels.filter((f) => f.fileName !== res);
+        setLabels([...newLabels]);
+
+        if (newLabels.length > 0) setSelected(newLabels.length - 1);
+        else setSelected(null);
+      });
+    }
   };
 
   const onSwitchAutoClick = () => {
@@ -57,6 +70,18 @@ function PrinterManager() {
   const onMenuClick: MenuProps['onClick'] = (e) => {
     setSelected(+e.key);
   };
+
+  useEffect(() => {
+    if (!printer) return;
+
+    const newLabels = labels.filter((f) => f.fileName !== printer);
+
+    setLabels([...newLabels]);
+
+    sendMessage('unlinkZpl', [printer]);
+    dispatch({ type: 'printer', payload: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [printer]);
 
   useEffect(() => {
     if (!newFile) return;
@@ -162,16 +187,33 @@ function PrinterManager() {
             items={items}
           />
         </div>
-        <button
-          type="button"
-          style={{ height: '7vh', marginLeft: '2vw' }}
-          onClick={onClickToPrint}
-        >
-          <span role="img" aria-label="Imprimir">
-            🖨
-          </span>
-          Imprimir
-        </button>
+        <div>
+          <button
+            type="button"
+            style={{ height: '7vh', width: '21vw', marginLeft: '2vw' }}
+            onClick={onClickToPrint}
+          >
+            <span role="img" aria-label="Imprimir">
+              🖨
+            </span>
+            Imprimir
+          </button>
+          <button
+            type="button"
+            style={{
+              height: '7vh',
+              width: '21vw',
+              marginLeft: '2vw',
+              marginTop: '2vw',
+            }}
+            onClick={onClickDelete}
+          >
+            <span role="img" aria-label="Excluir">
+              🧹
+            </span>
+            Excluir
+          </button>
+        </div>
       </div>
 
       <div className="container-labels">
@@ -182,6 +224,8 @@ function PrinterManager() {
         {labels &&
         selected !== null &&
         labels.length > 0 &&
+        labels[selected] &&
+        'img' in labels[selected] &&
         labels[selected].img ? (
           <img
             className="zlp-img"

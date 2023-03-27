@@ -48,9 +48,18 @@ const toPrint = (label: ILabel) => {
       if (!success) {
         console.log(failureReason);
       }
-
-      win.destroy();
+      win.close();
     });
+  });
+
+  win.on('close', () => {
+    try {
+      fs.unlink(mainEnv.getAssetPath(`/zpl/${label.fileName}`), (e) =>
+        console.log(e)
+      );
+    } catch (error) {
+      console.log(error);
+    }
   });
 };
 

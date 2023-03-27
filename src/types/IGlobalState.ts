@@ -13,4 +13,5 @@ export interface IGlobalState {
   ipcRenderer: typeof window.electron.ipcRenderer;
   autoPrinter: boolean;
   newFile: ILabel | null;
+  printer: string | null;
 }

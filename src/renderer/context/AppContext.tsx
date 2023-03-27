@@ -39,6 +39,14 @@ export function AppContext({ children }: IContextApp) {
     }
   });
 
+  globalState.ipcRenderer.on('printer', (args) => {
+    console.log(args);
+    if (Array.isArray(args) && args.length > 1) {
+      console.log(args[1]);
+      dispatch({ type: 'printer', payload: args[1] });
+    }
+  });
+
   // Chanel que recebe erros do backend
   globalState.ipcRenderer.on('ipcException', (msg) => {
     dispatch({

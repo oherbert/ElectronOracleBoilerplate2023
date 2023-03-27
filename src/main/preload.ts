@@ -7,7 +7,8 @@ export type Channels =
   | 'getConfing'
   | 'printer'
   | 'newFile'
-  | 'changeAutoPrinter';
+  | 'changeAutoPrinter'
+  | 'unlinkZpl';
 
 let listeners: Channels[] = [];
 

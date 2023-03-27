@@ -1,20 +1,21 @@
 import { ipcMain, BrowserWindow } from 'electron';
 import ILabel from 'types/ILabel';
+import fs from 'fs';
 import getDBConfig from '../config/database';
 import mainEnv from './MainEnv';
 import trayApp from './TrayApp';
 
-// const options = {
-//   silent: false,
-//   color: false,
-//   landscape: false,
-//   pagesPerSheet: 1,
-//   collate: false,
-//   copies: 1,
-// };
+const options = {
+  silent: false,
+  color: false,
+  landscape: false,
+  pagesPerSheet: 1,
+  collate: false,
+  copies: 1,
+};
 
 const appListeners = () => {
-  ipcMain.on('printer', async (event, args) => {
+  ipcMain.on('printer', (event, args) => {
     try {
       if (!Array.isArray(args) || args.length === 0 || !('zpl' in args[0]))
         throw new Error('Tipo de Argumento para impressão incorreto!');
@@ -32,56 +33,26 @@ const appListeners = () => {
       win.once('ready-to-show', () => win.hide());
 
       win.loadFile(mainEnv.getAssetPath(`/zpl/${label.fileName}`));
-      win.webContents.on('did-finish-load', async () => {
-        let options = {
-          silent: false,
-          color: false,
-          landscape: false,
-          pagesPerSheet: 1,
-          collate: false,
-          copies: 1,
-          deviceName: '',
-        };
+      win.webContents.on('did-finish-load', () => {
+        win.webContents.print(options, (success, failureReason) => {
+          console.log(success);
 
-        if (mainEnv.autoPrint) {
-          // Finding Default Printer name
-          const printersInfo = await win.webContents.getPrintersAsync();
-          const printer = printersInfo.filter((p) => p.isDefault === true)[0];
-
-          // console.log(printer);
-          options = {
-            silent: true,
-            deviceName: printer.name,
-            color: false,
-            landscape: false,
-            pagesPerSheet: 1,
-            collate: false,
-            copies: 1,
-          };
-        }
-
-        win?.webContents.print(options, (success, failureReason) => {
           if (!success) {
-            console.log(failureReason);
             if (
               failureReason === 'Print job canceled' ||
               failureReason === 'Print job failed'
             )
               event.reply('printer', ['canceled']);
             else event.reply('ipcException', failureReason);
-          } else event.reply('printer', ['success', label.fileName]);
+          } else {
+            console.log('success');
 
-          win.destroy();
+            event.reply('printer', ['success', label.fileName]);
+          }
+
+          win.close();
         });
       });
-
-      /*
-      win?.webContents.print(options, (success, failureReason) => {
-        if (!success) console.log(failureReason);
-
-        console.log('Print Initiated');
-      });
-*/
     } catch (err: any) {
       console.log(`${err}`);
 
@@ -99,6 +70,25 @@ const appListeners = () => {
       mainEnv.autoPrint = args[0];
     if (mainEnv.autoPrint) trayApp.setRadioBtnTrue('impressaoAuto');
     else trayApp.setRadioBtnTrue('impressaoManual');
+  });
+
+  ipcMain.on('unlinkZpl', async (event, arg) => {
+    console.log(`${arg} unlink back`);
+
+    let resp = arg[0];
+
+    if (Array.isArray(arg) && arg.length > 0) {
+      try {
+        fs.unlink(mainEnv.getAssetPath(`/zpl/${arg[0]}`), (e) =>
+          console.log(e)
+        );
+      } catch (error: any) {
+        resp = error.message;
+        console.log(error);
+      } finally {
+        event.reply('unlinkZpl', resp);
+      }
+    }
   });
 
   ipcMain.on('getConfig', async (event) => {

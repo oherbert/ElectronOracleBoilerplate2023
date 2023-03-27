@@ -8,6 +8,7 @@ const globalState: IGlobalState = {
   ipcRenderer: window.electron.ipcRenderer,
   autoPrinter: false,
   newFile: null,
+  printer: null,
 };
 
 export default globalState;
